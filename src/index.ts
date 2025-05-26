@@ -17,7 +17,7 @@ if (!token || !teamName) {
 const server = new McpServer(
     {
         name: "kChat MCP Server",
-        version: "0.0.6",
+        version: "0.0.7",
     },
     {
         capabilities: {
@@ -157,6 +157,7 @@ const kChatClient = new KchatClient();
 
 server.tool(
     "kchat_list_channels",
+    "List kChat public channels with pagination",
     {
         limit: z.number().min(1).max(100).default(100).describe("Results limit"),
         page: z.number().min(0).default(0).describe("Current pagination page")
@@ -172,6 +173,7 @@ server.tool(
 
 server.tool(
     "kchat_post_message",
+    "Post a new message to a kChat channel",
     {
         channel_id: z.string().describe("The ID of the channel containing the message"),
         text: z.string().describe("The message text to post")
@@ -187,6 +189,7 @@ server.tool(
 
 server.tool(
     "kchat_reply_to_thread",
+    "Reply to a specific message thread in kChat",
     {
         channel_id: z.string().describe("The ID of the channel containing the message"),
         thread_id: z.string().describe("The parent message ID"),
@@ -203,6 +206,7 @@ server.tool(
 
 server.tool(
     "kchat_add_reaction",
+    "Add a reaction emoji to a kChat message",
     {
         post_id: z.string().describe("The ID of the the message to react to"),
         emoji_name: z.string().describe("The name of the emoji reaction")
@@ -218,6 +222,7 @@ server.tool(
 
 server.tool(
     "kchat_get_channel_history",
+    "Get recent messages from a kChat channel",
     {
         channel_id: z.string().describe("The ID of the channel containing the message"),
         limit: z.number().min(1).max(100).default(10).describe("Number of messages to retrieve (default 10)")
@@ -233,6 +238,7 @@ server.tool(
 
 server.tool(
     "kchat_get_thread_replies",
+    "Get all replies in a kChat message thread",
     {
         thread_id: z.string().describe("The parent message ID"),
     },
@@ -247,6 +253,7 @@ server.tool(
 
 server.tool(
     "kchat_get_users",
+    "Get a list of all users in the kChat with their basic profile information",
     {
         limit: z.number().min(1).max(100).default(100).describe("Results limit"),
         page: z.number().min(0).default(0).describe("Current pagination page")
@@ -262,6 +269,7 @@ server.tool(
 
 server.tool(
     "kchat_get_user_profile",
+    "Get detailed profile information for a specific kChat user",
     {
         user_id: z.string().describe("The ID of the user")
     },
