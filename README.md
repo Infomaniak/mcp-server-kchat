@@ -85,7 +85,7 @@ Add the following to your `claude_desktop_config.json`:
       "command": "npx",
       "args": [
         "-y",
-        "@infomaniak/kchat-mcp"
+        "@infomaniak/mcp-server-kchat"
       ],
       "env": {
         "KCHAT_TOKEN": "your-token",
@@ -111,7 +111,7 @@ Add the following to your `claude_desktop_config.json`:
         "KCHAT_TOKEN",
         "-e",
         "KCHAT_TEAM_NAME",
-        "infomaniak/kchat-mcp"
+        "infomaniak/mcp-server-kchat"
       ],
       "env": {
         "KCHAT_TOKEN": "your-token",
@@ -138,7 +138,7 @@ If you encounter permission errors, verify that:
 Docker build:
 
 ```bash
-docker build -t infomaniak/kchat-mcp -f Dockerfile .
+docker build -t infomaniak/mcp-server-kchat -f Dockerfile .
 ```
 
 ## License

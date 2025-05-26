@@ -14,10 +14,20 @@ if (!token || !teamName) {
     process.exit(1);
 }
 
-const server = new McpServer({
-    name: "kChat MCP Server",
-    version: "0.0.2"
-});
+const server = new McpServer(
+    {
+        name: "kChat MCP Server",
+        version: "0.0.3",
+    },
+    {
+        capabilities: {
+            completions: {},
+            prompts: {},
+            resources: {},
+            tools: {},
+        },
+    },
+);
 
 class KchatClient {
     private readonly headers: { Authorization: string; "Content-Type": string };
@@ -264,8 +274,15 @@ server.tool(
     }
 );
 
-const transport = new StdioServerTransport();
-console.error("Connecting server to transport...");
-await server.connect(transport);
+async function main() {
+    const transport = new StdioServerTransport();
+    console.error("Connecting server to transport...");
+    await server.connect(transport);
 
-console.log("Infomaniak kChat MCP Server running on stdio");
+    console.log("Infomaniak kChat MCP Server running on stdio");
+}
+
+main().catch((error) => {
+    console.error("Fatal error in main():", error);
+    process.exit(1);
+});
