@@ -17,7 +17,7 @@ if (!token || !teamName) {
 const server = new McpServer(
     {
         name: "kChat MCP Server",
-        version: "0.0.5",
+        version: "0.0.6",
     },
     {
         capabilities: {
@@ -276,7 +276,6 @@ server.tool(
 
 async function main() {
     const transport = new StdioServerTransport();
-    console.log("Connecting server to transport...");
     await server.connect(transport);
 }
 
