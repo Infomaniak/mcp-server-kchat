@@ -2,8 +2,7 @@
 
 import {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {z} from "zod";
-import express from "express";
-import {StreamableHTTPServerTransport} from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import {StdioServerTransport} from "@modelcontextprotocol/sdk/server/stdio.js";
 
 const token = process.env.KCHAT_TOKEN;
 const teamName = process.env.KCHAT_TEAM_NAME;
@@ -18,7 +17,7 @@ if (!token || !teamName) {
 const server = new McpServer(
     {
         name: "kChat MCP Server",
-        version: "0.0.4",
+        version: "0.0.5",
     },
     {
         capabilities: {
@@ -42,7 +41,7 @@ class KchatClient {
 
     async getTeamByName(name: string): Promise<any> {
         const response = await fetch(
-            `https://${teamName}.kchat.infomaniak.com/api/v4/teams/name/${name}`,
+            `https://${teamName}.kchat.infomaniak.com/api/v4/teams/name/${teamName}`,
             {headers: this.headers},
         );
 
@@ -275,63 +274,13 @@ server.tool(
     }
 );
 
-const app = express();
-app.use(express.json());
+async function main() {
+    const transport = new StdioServerTransport();
+    console.log("Connecting server to transport...");
+    await server.connect(transport);
+}
 
-// Handle POST requests for client-to-server communication
-app.post(
-    '/mcp',
-    async (req, res) => {
-        // New initialization request
-        const transport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: undefined
-        });
-
-        // Connect to the MCP server
-        await server.connect(transport);
-
-        // Handle the request
-        await transport.handleRequest(req, res, req.body);
-
-        res.on('close', () => {
-            console.log('Request closed');
-            transport.close();
-            server.close();
-        });
-    });
-
-// Handle GET requests for server-to-client notifications via SSE
-app.get('/mcp', async (req: express.Request, res: express.Response) => {
-    console.log('Received GET MCP request');
-    res.writeHead(405).end(JSON.stringify({
-        jsonrpc: "2.0",
-        error: {
-            code: -32000,
-            message: "Method not allowed."
-        },
-        id: null
-    }));
-});
-
-// Handle DELETE requests for session termination
-app.delete('/mcp', async (req: express.Request, res: express.Response) => {
-    console.log('Received DELETE MCP request');
-    res.writeHead(405).end(JSON.stringify({
-        jsonrpc: "2.0",
-        error: {
-            code: -32000,
-            message: "Method not allowed."
-        },
-        id: null
-    }));
-});
-
-app.listen(3000, () => {
-    console.log(`kChat MCP Server listening on port 3000`);
-});
-
-// Handle server shutdown
-process.on('SIGINT', async () => {
-    console.log('Shutting down server...');
-    process.exit(0);
+main().catch((error) => {
+    console.log("Fatal error in main():", error);
+    process.exit(1);
 });
