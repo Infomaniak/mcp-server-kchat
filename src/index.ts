@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {z} from "zod";
 import {StdioServerTransport} from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -14,7 +16,7 @@ if (!token || !teamName) {
 
 const server = new McpServer({
     name: "kChat MCP Server",
-    version: "1.0.0"
+    version: "0.0.2"
 });
 
 class KchatClient {
