@@ -175,7 +175,7 @@ server.tool(
     "kchat_post_message",
     "Post a new message to a kChat channel",
     {
-        channel_id: z.string().describe("The ID of the channel containing the message"),
+        channel_id: z.string().uuid().describe("The ID of the channel containing the message"),
         text: z.string().describe("The message text to post")
     },
     async ({channel_id, text}) => {
@@ -191,8 +191,8 @@ server.tool(
     "kchat_reply_to_thread",
     "Reply to a specific message thread in kChat",
     {
-        channel_id: z.string().describe("The ID of the channel containing the message"),
-        thread_id: z.string().describe("The parent message ID"),
+        channel_id: z.string().uuid().describe("The ID of the channel containing the message"),
+        thread_id: z.string().uuid().describe("The parent message ID"),
         text: z.string().describe("The message text to post")
     },
     async ({channel_id, thread_id, text}) => {
@@ -208,7 +208,7 @@ server.tool(
     "kchat_add_reaction",
     "Add a reaction emoji to a kChat message",
     {
-        post_id: z.string().describe("The ID of the the message to react to"),
+        post_id: z.string().uuid().describe("The ID of the the message to react to"),
         emoji_name: z.string().describe("The name of the emoji reaction")
     },
     async ({post_id, emoji_name}) => {
@@ -224,7 +224,7 @@ server.tool(
     "kchat_get_channel_history",
     "Get recent messages from a kChat channel",
     {
-        channel_id: z.string().describe("The ID of the channel containing the message"),
+        channel_id: z.string().uuid().describe("The ID of the channel containing the message"),
         limit: z.number().min(1).max(100).default(10).describe("Number of messages to retrieve (default 10)")
     },
     async ({channel_id, limit}) => {
@@ -240,7 +240,7 @@ server.tool(
     "kchat_get_thread_replies",
     "Get all replies in a kChat message thread",
     {
-        thread_id: z.string().describe("The parent message ID"),
+        thread_id: z.string().uuid().describe("The parent message ID"),
     },
     async ({thread_id}) => {
         const response = await kChatClient.getThread(thread_id);
@@ -271,7 +271,7 @@ server.tool(
     "kchat_get_user_profile",
     "Get detailed profile information for a specific kChat user",
     {
-        user_id: z.string().describe("The ID of the user")
+        user_id: z.string().uuid().describe("The ID of the user")
     },
     async ({user_id}) => {
         const response = await kChatClient.getUser(user_id);
