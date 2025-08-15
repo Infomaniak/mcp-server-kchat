@@ -17,7 +17,7 @@ if (!token || !teamName) {
 const server = new McpServer(
     {
         name: "kChat MCP Server",
-        version: "0.0.9",
+        version: "0.0.10",
     },
     {
         capabilities: {
@@ -190,13 +190,13 @@ class KchatClient {
         try {
             // First, get the current user (sender)
             const currentUser = await this.getCurrentUser();
-            
+
             // Create a direct channel between the current user and the recipient
             const channel = await this.createDirectChannel([currentUser.id, to_user_id]);
-            
+
             // Send the message to the direct channel
             const response = await this.postMessage(channel.id, text, undefined);
-            
+
             return response;
         } catch (error) {
             throw new Error(`Failed to send direct message: ${error}`);
@@ -365,7 +365,7 @@ server.tool(
         try {
             // Get the user ID from the username
             const user = await kChatClient.getUserByUsername(username);
-            
+
             // Send the direct message using the user ID
             const response = await kChatClient.sendDirectMessage(user.id, text);
 
