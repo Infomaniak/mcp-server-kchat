@@ -39,7 +39,7 @@ class KchatClient {
         };
     }
 
-    async getTeamByName(name: string): Promise<any> {
+    async getTeamByName(): Promise<any> {
         const response = await fetch(
             `https://${teamName}.kchat.infomaniak.com/api/v4/teams/name/${teamName}`,
             {headers: this.headers},
@@ -50,12 +50,11 @@ class KchatClient {
 
     async getChannels(limit: number, page: number): Promise<any> {
         const params = new URLSearchParams({
-            limit: Math.min(limit, 100).toString(),
+            per_page: Math.min(limit, 100).toString(),
             page: page.toString()
         });
 
-        // @ts-ignore
-        const team = await this.getTeamByName(teamName);
+        const team = await this.getTeamByName();
 
         const response = await fetch(
             `https://${teamName}.kchat.infomaniak.com/api/v4/teams/${team.id}/channels?${params}`,
@@ -127,7 +126,7 @@ class KchatClient {
 
     async getUsers(limit: number, page: number): Promise<any> {
         const params = new URLSearchParams({
-            limit: Math.min(limit, 100).toString(),
+            per_page: Math.min(limit, 100).toString(),
             page: page.toString()
         });
 
@@ -159,8 +158,23 @@ server.tool(
     "kchat_list_channels",
     "List kChat public channels with pagination",
     {
-        limit: z.number().min(1).max(100).default(100).describe("Results limit"),
-        page: z.number().min(0).default(0).describe("Current pagination page")
+        limit: z.preprocess(
+            (val) => {
+                if (typeof val === "string") {
+                    return Number.parseInt(val);
+                }
+
+                return val;
+            }, z.number().min(1).max(100).default(100).describe("Results limit")
+        ),
+        page: z.preprocess(
+            (val) => {
+                if (typeof val === "string") {
+                    return Number.parseInt(val);
+                }
+
+                return val;
+            }, z.number().min(0).default(0).describe("Current pagination page"))
     },
     async ({limit, page}) => {
         const response = await kChatClient.getChannels(limit, page);
@@ -225,7 +239,14 @@ server.tool(
     "Get recent messages from a kChat channel",
     {
         channel_id: z.string().uuid().describe("The ID of the channel containing the message"),
-        limit: z.number().min(1).max(100).default(10).describe("Number of messages to retrieve (default 10)")
+        limit: z.preprocess(
+            (val) => {
+                if (typeof val === "string") {
+                    return Number.parseInt(val);
+                }
+
+                return val;
+            }, z.number().min(1).max(100).default(10).describe("Number of messages to retrieve (default 10)"))
     },
     async ({channel_id, limit}) => {
         const response = await kChatClient.getPostForChannel(channel_id, limit);
@@ -255,8 +276,22 @@ server.tool(
     "kchat_get_users",
     "Get a list of all users in the kChat with their basic profile information",
     {
-        limit: z.number().min(1).max(100).default(100).describe("Results limit"),
-        page: z.number().min(0).default(0).describe("Current pagination page")
+        limit: z.preprocess(
+            (val) => {
+                if (typeof val === "string") {
+                    return Number.parseInt(val);
+                }
+
+                return val;
+            }, z.number().min(1).max(100).default(100).describe("Results limit")),
+        page: z.preprocess(
+            (val) => {
+                if (typeof val === "string") {
+                    return Number.parseInt(val);
+                }
+
+                return val;
+            }, z.number().min(0).default(0).describe("Current pagination page"))
     },
     async ({limit, page}) => {
         const response = await kChatClient.getUsers(limit, page);
