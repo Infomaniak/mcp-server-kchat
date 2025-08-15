@@ -44,7 +44,7 @@ MCP Server for the kChat API.
 6. `kchat_get_thread_replies`
    - Get all replies in a message thread
    - Required inputs:
-      - `thread_ts` (string): The parent message ID
+      - `thread_id` (string): The parent message ID
    - Returns: List of replies with their content and metadata
 
 
@@ -62,13 +62,6 @@ MCP Server for the kChat API.
    - Returns: Detailed user profile information
 
 9. `kchat_send_direct_message`
-   - Send a direct message to a user
-   - Required inputs:
-      - `user_id` (string): The ID of the user to send the message to
-      - `text` (string): The message text to send
-   - Returns: Message post
-
-10. `kchat_send_direct_message_by_username`
     - Send a direct message to a user by username
     - Required inputs:
        - `username` (string): The username of the user to send the message to
