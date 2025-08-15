@@ -30,12 +30,13 @@ const server = new McpServer(
 );
 
 class KchatClient {
-    private readonly headers: { Authorization: string; "Content-Type": string };
+    private readonly headers: { Authorization: string; "Content-Type": string, "User-Agent": string };
 
     constructor() {
         this.headers = {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
+            "User-Agent": "kChat MCP Server"
         };
     }
 
