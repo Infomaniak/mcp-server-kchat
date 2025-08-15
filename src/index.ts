@@ -3,15 +3,122 @@
 import {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {z} from "zod";
 import {StdioServerTransport} from "@modelcontextprotocol/sdk/server/stdio.js";
+import * as fs from "fs";
+import * as path from "path";
+import process from "node:process";
+
+// Check for help flag
+if (process.argv.includes('-h') || process.argv.includes('--help')) {
+    console.log(`
+kChat MCP Server
+
+Usage: node index.js [options]
+
+Environment Variables:
+  KCHAT_TOKEN      Required. Your kChat token.
+  KCHAT_TEAM_NAME  Required. Your kChat team unique name.
+
+Options:
+  --log-file PATH        Optional. Path to the error log file.
+  --enable-logging FILE  Enable request and error logging to files, specify log file name.
+  -h, --help             Show this help message
+`);
+    process.exit(0);
+}
 
 const token = process.env.KCHAT_TOKEN;
 const teamName = process.env.KCHAT_TEAM_NAME;
+
+// Parse command line arguments
+let enableLogging = false;
+let requestLogFileName = 'kchat-requests.log';
+let logFilePath = path.join(process.cwd(), 'kchat-error.log');
+
+for (let i = 2; i < process.argv.length; i++) {
+    if (process.argv[i] === '--enable-logging' && i + 1 < process.argv.length) {
+        enableLogging = true;
+        requestLogFileName = process.argv[i + 1];
+        i++; // Skip the next argument as it's the file name
+    } else if (process.argv[i] === '--log-file' && i + 1 < process.argv.length) {
+        logFilePath = process.argv[i + 1];
+        i++; // Skip the next argument as it's the file path
+    }
+}
 
 if (!token || !teamName) {
     console.error(
         "Please set KCHAT_TOKEN and KCHAT_TEAM_NAME environment variables",
     );
     process.exit(1);
+}
+
+let errorLogStream: fs.WriteStream | undefined;
+let requestLogStream: fs.WriteStream | undefined;
+let originalConsoleError = console.error;
+
+if (enableLogging) {
+    // Create error log stream
+    errorLogStream = fs.createWriteStream(logFilePath, { flags: 'a' });
+    
+    // Create a separate stream for request logging
+    const requestLogPath = path.join(path.dirname(logFilePath), requestLogFileName);
+    requestLogStream = fs.createWriteStream(requestLogPath, { flags: 'a' });
+    
+    // Save the original console.error
+    originalConsoleError = console.error;
+    
+    // Override console.error
+    console.error = function(...args) {
+      // Write to file with timestamp
+      errorLogStream!.write(`${new Date().toISOString()} - ${args.join(' ')}\n`);
+      
+      // Also output to original stderr
+      originalConsoleError.apply(console, args);
+    };
+}
+
+// Function to log all incoming requests
+function logRequest(data: any) {
+    if (!enableLogging || !requestLogStream) return;
+    
+    const timestamp = new Date().toISOString();
+    requestLogStream.write(`[${timestamp}] REQUEST: ${JSON.stringify(data)}\n`);
+}
+
+// Custom transport that logs all requests before passing them to the server
+class LoggingStdioServerTransport extends StdioServerTransport {
+  constructor(stdin = process.stdin, stdout = process.stdout) {
+    super(stdin, stdout);
+    
+    // Wrap the _ondata handler to add logging of raw data
+    const originalOndata = this['_ondata'];
+    this['_ondata'] = (chunk: Buffer) => {
+      try {
+        // Log the raw chunk data
+        if (enableLogging && requestLogStream) {
+          const timestamp = new Date().toISOString();
+          requestLogStream.write(`[${timestamp}] RAW DATA CHUNK: ${chunk.toString()}\n`);
+        }
+      } catch (e) {
+        // Ignore logging errors
+      }
+      // Call the original handler
+      originalOndata.call(this, chunk);
+    };
+    
+    // Wrap the onmessage handler to add logging of parsed messages
+    const originalOnmessage = this.onmessage;
+    this.onmessage = (message: any) => {
+      try {
+        logRequest(message);
+      } catch (e) {
+        // Ignore logging errors
+      }
+      if (originalOnmessage) {
+        originalOnmessage.call(this, message);
+      }
+    };
+  }
 }
 
 const server = new McpServer(
@@ -41,7 +148,7 @@ class KchatClient {
 
     async getTeamByName(): Promise<any> {
         const response = await fetch(
-            `https://${teamName}.kchat.infomaniak.com/api/v4/teams/name/${teamName}`,
+            `https://${teamName}.kchat.infomaniak.com/api/v4/teams/name/${name}`,
             {headers: this.headers},
         );
 
@@ -318,7 +425,9 @@ server.tool(
 );
 
 async function main() {
-    const transport = new StdioServerTransport();
+    const transport = enableLogging 
+        ? new LoggingStdioServerTransport() 
+        : new StdioServerTransport();
     await server.connect(transport);
 }
 
