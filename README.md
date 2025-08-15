@@ -96,6 +96,28 @@ Add the following to your `claude_desktop_config.json`:
 }
 ```
 
+#### NPX with logging enabled
+
+```json
+{
+  "mcpServers": {
+    "kchat": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@infomaniak/mcp-server-kchat",
+        "--enable-logging",
+        "my-requests.log"
+      ],
+      "env": {
+        "KCHAT_TOKEN": "your-token",
+        "KCHAT_TEAM_NAME": "your-team"
+      }
+    }
+  }
+}
+```
+
 #### docker
 
 ```json
@@ -122,10 +144,43 @@ Add the following to your `claude_desktop_config.json`:
 }
 ```
 
+#### docker with logging enabled
+
+```json
+{
+  "mcpServers": {
+    "kchat": {
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "-e",
+        "KCHAT_TOKEN",
+        "-e",
+        "KCHAT_TEAM_NAME",
+        "infomaniak/mcp-server-kchat",
+        "--enable-logging",
+        "my-requests.log"
+      ],
+      "env": {
+        "KCHAT_TOKEN": "your-token",
+        "KCHAT_TEAM_NAME": "your-team"
+      }
+    }
+  }
+}
+```
+
 ### Environment Variables
 
 1. `KCHAT_TOKEN`: Required. Your kChat token.
 2. `KCHAT_TEAM_NAME`: Required. Your kChat team unique name.
+
+### Command Line Arguments
+
+1. `--log-file PATH`: Optional. Path to the error log file.
+2. `--enable-logging FILE`: Optional. Enable request and error logging to files, specify log file name for requests.
 
 ### Troubleshooting
 
