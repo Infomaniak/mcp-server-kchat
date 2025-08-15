@@ -61,6 +61,13 @@ MCP Server for the kChat API.
       - `user_id` (string): The user's ID
    - Returns: Detailed user profile information
 
+9. `kchat_send_direct_message`
+   - Send a direct message to a user
+   - Required inputs:
+      - `user_id` (string): The ID of the user to send the message to
+      - `text` (string): The message text to send
+   - Returns: Message post
+
 ## Setup
 
 1. Create a kChat token linked to your user:

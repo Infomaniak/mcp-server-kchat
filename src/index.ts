@@ -17,7 +17,7 @@ if (!token || !teamName) {
 const server = new McpServer(
     {
         name: "kChat MCP Server",
-        version: "0.0.9",
+        version: "0.1.0",
     },
     {
         capabilities: {
@@ -149,6 +149,43 @@ class KchatClient {
         );
 
         return response.json();
+    }
+
+    async getCurrentUser(): Promise<any> {
+        const response = await fetch(
+            `https://${teamName}.kchat.infomaniak.com/api/v4/users/me`,
+            {
+                headers: this.headers
+            },
+        );
+
+        return response.json();
+    }
+
+    async createDirectChannel(userIds: [string, string]): Promise<any> {
+        const response = await fetch(
+            `https://${teamName}.kchat.infomaniak.com/api/v4/channels/direct`,
+            {
+                headers: this.headers,
+                method: "POST",
+                body: JSON.stringify(userIds)
+            },
+        );
+
+        return response.json();
+    }
+
+    async sendDirectMessage(to_user_id: string, text: string): Promise<any> {
+        // First, get the current user (sender)
+        const currentUser = await this.getCurrentUser();
+        
+        // Create a direct channel between the current user and the recipient
+        const channel = await this.createDirectChannel([currentUser.id, to_user_id]);
+        
+        // Send the message to the direct channel
+        const response = await this.postMessage(channel.id, text, undefined);
+        
+        return response;
     }
 }
 
@@ -303,13 +340,14 @@ server.tool(
 );
 
 server.tool(
-    "kchat_get_user_profile",
-    "Get detailed profile information for a specific kChat user",
+    "kchat_send_direct_message",
+    "Send a direct message to a kChat user",
     {
-        user_id: z.string().uuid().describe("The ID of the user")
+        user_id: z.string().uuid().describe("The ID of the user to send the message to"),
+        text: z.string().describe("The message text to send")
     },
-    async ({user_id}) => {
-        const response = await kChatClient.getUser(user_id);
+    async ({user_id, text}) => {
+        const response = await kChatClient.sendDirectMessage(user_id, text);
 
         return {
             content: [{type: "text", text: JSON.stringify(response)}],
