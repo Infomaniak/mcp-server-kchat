@@ -380,6 +380,21 @@ server.tool(
     }
 );
 
+server.tool(
+    "kchat_get_user_profile",
+    "Get detailed profile information for a specific kChat user",
+    {
+        user_id: z.string().uuid().describe("The ID of the user")
+    },
+    async ({user_id}) => {
+        const response = await kChatClient.getUser(user_id);
+
+        return {
+            content: [{type: "text", text: JSON.stringify(response)}],
+        };
+    }
+);
+
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
