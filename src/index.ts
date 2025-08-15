@@ -162,6 +162,17 @@ class KchatClient {
         return response.json();
     }
 
+    async getUserByUsername(username: string): Promise<any> {
+        const response = await fetch(
+            `https://${teamName}.kchat.infomaniak.com/api/v4/users/username/${username}`,
+            {
+                headers: this.headers
+            },
+        );
+
+        return response.json();
+    }
+
     async createDirectChannel(userIds: [string, string]): Promise<any> {
         const response = await fetch(
             `https://${teamName}.kchat.infomaniak.com/api/v4/channels/direct`,
@@ -352,6 +363,32 @@ server.tool(
         return {
             content: [{type: "text", text: JSON.stringify(response)}],
         };
+    }
+);
+
+server.tool(
+    "kchat_send_direct_message_by_username",
+    "Send a direct message to a kChat user by username",
+    {
+        username: z.string().describe("The username of the user to send the message to"),
+        text: z.string().describe("The message text to send")
+    },
+    async ({username, text}) => {
+        try {
+            // Get the user ID from the username
+            const user = await kChatClient.getUserByUsername(username);
+            
+            // Send the direct message using the user ID
+            const response = await kChatClient.sendDirectMessage(user.id, text);
+
+            return {
+                content: [{type: "text", text: JSON.stringify(response)}],
+            };
+        } catch (error) {
+            return {
+                content: [{type: "text", text: `Error sending direct message: ${error}`}],
+            };
+        }
     }
 );
 
