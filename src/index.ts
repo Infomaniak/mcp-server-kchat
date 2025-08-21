@@ -17,7 +17,7 @@ if (!token || !teamName) {
 const server = new McpServer(
     {
         name: "kChat MCP Server",
-        version: "0.0.10",
+        version: "0.0.11",
     },
     {
         capabilities: {
