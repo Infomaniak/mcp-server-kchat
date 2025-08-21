@@ -114,6 +114,17 @@ class KchatClient {
         return response.json();
     }
 
+    async getPost(post_id: string): Promise<any> {
+        const response = await fetch(
+            `https://${teamName}.kchat.infomaniak.com/api/v4/posts/${post_id}`,
+            {
+                headers: this.headers
+            },
+        );
+
+        return response.json();
+    }
+
     async getThread(thread_id: string): Promise<any> {
         const response = await fetch(
             `https://${teamName}.kchat.infomaniak.com/api/v4/posts/${thread_id}/thread`,
@@ -258,12 +269,12 @@ server.tool(
     "kchat_reply_to_thread",
     "Reply to a specific message thread in kChat",
     {
-        channel_id: z.string().uuid().describe("The ID of the channel containing the message"),
         thread_id: z.string().uuid().describe("The parent message ID"),
         text: z.string().describe("The message text to post")
     },
-    async ({channel_id, thread_id, text}) => {
-        const response = await kChatClient.postMessage(channel_id, text, thread_id);
+    async ({thread_id, text}) => {
+        const post = await kChatClient.getPost(thread_id);
+        const response = await kChatClient.postMessage(post.channel_id, text, thread_id);
 
         return {
             content: [{type: "text", text: JSON.stringify(response)}],
