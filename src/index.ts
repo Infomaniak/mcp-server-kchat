@@ -18,7 +18,7 @@ if (!token || !teamName) {
 const server = new McpServer(
     {
         name: "kChat MCP Server",
-        version: "1.0.0",
+        version: "1.0.1",
     },
     {
         capabilities: {
@@ -227,6 +227,6 @@ async function main() {
 }
 
 main().catch((error) => {
-    console.log("Fatal error in main():", error);
+    console.error("Fatal error in main():", error);
     process.exit(1);
 });
