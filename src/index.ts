@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 
+import {createRequire} from "node:module";
 import {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {z} from "zod";
 import {StdioServerTransport} from "@modelcontextprotocol/sdk/server/stdio.js";
 import {KchatClient} from "./kchat-client.js";
+
+const require = createRequire(import.meta.url);
+const {version} = require("../package.json") as {version: string};
 
 const token = process.env.KCHAT_TOKEN;
 const teamName = process.env.KCHAT_TEAM_NAME;
@@ -18,7 +22,7 @@ if (!token || !teamName) {
 const server = new McpServer(
     {
         name: "kChat MCP Server",
-        version: "1.0.1",
+        version,
     },
     {
         capabilities: {
