@@ -128,10 +128,18 @@ server.tool(
                 }
 
                 return val;
-            }, z.number().min(1).max(100).default(10).describe("Number of messages to retrieve (default 10)"))
+            }, z.number().min(1).max(100).default(10).describe("Number of messages to retrieve (default 10)")),
+        page: z.preprocess(
+            (val) => {
+                if (typeof val === "string") {
+                    return Number.parseInt(val);
+                }
+
+                return val;
+            }, z.number().min(0).default(0).describe("Current pagination page"))
     },
-    async ({channel_id, limit}) => {
-        const response = await kChatClient.getPostForChannel(channel_id, limit);
+    async ({channel_id, limit, page}) => {
+        const response = await kChatClient.getPostForChannel(channel_id, limit, page);
 
         return {
             content: [{type: "text", text: JSON.stringify(response.posts)}],
