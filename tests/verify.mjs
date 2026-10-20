@@ -67,6 +67,42 @@ describe("KchatClient.getChannels", () => {
     });
 });
 
+describe("KchatClient.getPostForChannel", () => {
+    test("defaults to page 0", async () => {
+        let capturedUrl = null;
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = async (url) => {
+            capturedUrl = url;
+            return { json: async () => ({ posts: {} }) };
+        };
+
+        const client = new KchatClient("mock-token", "my-team");
+        await client.getPostForChannel("channel-123", 10);
+
+        assert.ok(capturedUrl.includes("/channels/channel-123/posts"), "URL contains posts path");
+        assert.strictEqual(new URL(capturedUrl).searchParams.get("per_page"), "10");
+        assert.strictEqual(new URL(capturedUrl).searchParams.get("page"), "0");
+
+        globalThis.fetch = originalFetch;
+    });
+
+    test("passes requested page to the URL", async () => {
+        let capturedUrl = null;
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = async (url) => {
+            capturedUrl = url;
+            return { json: async () => ({ posts: {} }) };
+        };
+
+        const client = new KchatClient("mock-token", "my-team");
+        await client.getPostForChannel("channel-123", 10, 3);
+
+        assert.strictEqual(new URL(capturedUrl).searchParams.get("page"), "3");
+
+        globalThis.fetch = originalFetch;
+    });
+});
+
 describe("KchatClient.postMessage", () => {
     test("calls correct endpoint with POST", async () => {
         let capturedUrl = null;

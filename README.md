@@ -7,7 +7,7 @@ MCP Server for the kChat API.
 1. `kchat_list_channels`
     - List public channels
     - Optional inputs:
-        - `limit` (number, default: 100, max: 200): Maximum number of channels to return
+        - `limit` (number, default: 100, max: 100): Maximum number of channels to return
         - `page` (number, default: 0): Pagination page
     - Returns: List of channels with their IDs and information
 
@@ -39,6 +39,7 @@ MCP Server for the kChat API.
       - `channel_id` (string): The channel ID
    - Optional inputs:
       - `limit` (number, default: 10): Number of messages to retrieve
+      - `page` (number, default: 0): Pagination page
    - Returns: List of messages with their content and metadata
 
 6. `kchat_get_thread_replies`

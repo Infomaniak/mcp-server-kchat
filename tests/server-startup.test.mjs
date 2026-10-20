@@ -10,66 +10,139 @@ const packageJson = JSON.parse(
     readFileSync(path.join(__dirname, "..", "package.json"), "utf8"),
 );
 
+function startServer() {
+    return spawn("node", [path.join(__dirname, "..", "dist", "index.js")], {
+        env: {
+            ...process.env,
+            KCHAT_TOKEN: "test-token",
+            KCHAT_TEAM_NAME: "test-team",
+        },
+        stdio: ["pipe", "pipe", "pipe"],
+    });
+}
+
+function readResponse(child, id, timeoutMs = 5000) {
+    return new Promise((resolve, reject) => {
+        let buffer = "";
+        const timer = setTimeout(() => {
+            child.kill();
+            reject(new Error(`timed out waiting for response id ${id}`));
+        }, timeoutMs);
+
+        child.stdout.on("data", (chunk) => {
+            buffer += chunk.toString();
+            const lines = buffer.split("\n");
+            for (const line of lines) {
+                if (!line.trim()) continue;
+                try {
+                    const message = JSON.parse(line);
+                    if (message.id === id) {
+                        clearTimeout(timer);
+                        resolve(message);
+                        return;
+                    }
+                } catch {
+                    // partial line, keep buffering
+                }
+            }
+        });
+
+        child.on("error", (err) => {
+            clearTimeout(timer);
+            reject(err);
+        });
+    });
+}
+
+function listTools(child) {
+    child.stdin.write(JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+            protocolVersion: "2024-11-05",
+            capabilities: {},
+            clientInfo: { name: "test-client", version: "0.0.0" },
+        },
+    }) + "\n");
+    child.stdin.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }) + "\n");
+    child.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} }) + "\n");
+
+    return readResponse(child, 2);
+}
+
 describe("server startup", () => {
     test("the server version should match package.json", async () => {
-        const child = spawn("node", [path.join(__dirname, "..", "dist", "index.js")], {
-            env: {
-                ...process.env,
-                KCHAT_TOKEN: "test-token",
-                KCHAT_TEAM_NAME: "test-team",
-            },
-            stdio: ["pipe", "pipe", "pipe"],
-        });
+        const child = startServer();
 
-        const initialize = {
-            jsonrpc: "2.0",
-            id: 1,
-            method: "initialize",
-            params: {
-                protocolVersion: "2024-11-05",
-                capabilities: {},
-                clientInfo: { name: "test-client", version: "0.0.0" },
-            },
-        };
+        try {
+            child.stdin.write(JSON.stringify({
+                jsonrpc: "2.0",
+                id: 1,
+                method: "initialize",
+                params: {
+                    protocolVersion: "2024-11-05",
+                    capabilities: {},
+                    clientInfo: { name: "test-client", version: "0.0.0" },
+                },
+            }) + "\n");
 
-        child.stdin.write(JSON.stringify(initialize) + "\n");
+            const response = await readResponse(child, 1);
 
-        const response = await new Promise((resolve, reject) => {
-            let buffer = "";
-            const timer = setTimeout(() => {
-                child.kill();
-                reject(new Error("timed out waiting for initialize response"));
-            }, 5000);
+            assert.strictEqual(
+                response.result.serverInfo.version,
+                packageJson.version,
+                "server version should match package.json",
+            );
+        } finally {
+            child.kill();
+        }
+    });
 
-            child.stdout.on("data", (chunk) => {
-                buffer += chunk.toString();
-                const lines = buffer.split("\n");
-                for (const line of lines) {
-                    if (!line.trim()) continue;
-                    try {
-                        const message = JSON.parse(line);
-                        if (message.id === 1) {
-                            clearTimeout(timer);
-                            child.kill();
-                            resolve(message);
-                            return;
-                        }
-                    } catch {
-                        // partial line, keep buffering
-                    }
-                }
-            });
+    test("kchat_get_channel_history should expose a page input", async () => {
+        const child = startServer();
 
-            child.on("error", (err) => {
-                clearTimeout(timer);
-                reject(err);
-            });
-        });
+        try {
+            const response = await listTools(child);
 
-        assert.strictEqual(
-            response.result.serverInfo.version,
-            packageJson.version,
-            "server version should match package.json",
-        );
+            const history = response.result.tools.find(
+                (tool) => tool.name === "kchat_get_channel_history",
+            );
+            assert.ok(history, "kchat_get_channel_history tool should exist");
+
+            assert.deepStrictEqual(
+                history.inputSchema.properties.page,
+                {
+                    type: "number",
+                    minimum: 0,
+                    default: 0,
+                    description: "Current pagination page",
+                },
+                "kchat_get_channel_history should declare a page input defaulting to 0",
+            );
+        } finally {
+            child.kill();
+        }
+    });
+
+    test("kchat_list_channels limit should be capped at 100", async () => {
+        const child = startServer();
+
+        try {
+            const response = await listTools(child);
+
+            const channels = response.result.tools.find(
+                (tool) => tool.name === "kchat_list_channels",
+            );
+            assert.ok(channels, "kchat_list_channels tool should exist");
+
+            assert.strictEqual(
+                channels.inputSchema.properties.limit.maximum,
+                100,
+                "kchat_list_channels limit max should be 100",
+            );
+        } finally {
+            child.kill();
+        }
     });
 });

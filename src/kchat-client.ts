@@ -71,10 +71,10 @@ export class KchatClient {
         return response.json();
     }
 
-    async getPostForChannel(channel_id: string, limit: number): Promise<any> {
+    async getPostForChannel(channel_id: string, limit: number, page: number = 0): Promise<any> {
         const params = new URLSearchParams({
             per_page: Math.min(limit, 100).toString(),
-            page: "0"
+            page: page.toString()
         });
 
         const response = await fetch(
