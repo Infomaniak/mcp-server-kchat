@@ -1,3 +1,5 @@
+export const USERNAME_PATTERN = /^(?=.*[a-z0-9_-])[a-z0-9._-]+$/;
+
 export class KchatClient {
     private readonly token: string;
     private readonly teamName: string;
@@ -148,8 +150,12 @@ export class KchatClient {
     }
 
     async getUserByUsername(username: string): Promise<any> {
+        if (!USERNAME_PATTERN.test(username)) {
+            throw new Error("Invalid username");
+        }
+
         const response = await fetch(
-            `https://${this.teamName}.kchat.infomaniak.com/api/v4/users/username/${username}`,
+            `https://${this.teamName}.kchat.infomaniak.com/api/v4/users/username/${encodeURIComponent(username)}`,
             {
                 headers: this.headers
             },
