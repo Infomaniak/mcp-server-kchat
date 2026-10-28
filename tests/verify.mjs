@@ -130,3 +130,90 @@ describe("KchatClient.postMessage", () => {
         globalThis.fetch = originalFetch;
     });
 });
+
+describe("KchatClient.getUserByUsername", () => {
+    test("calls fetch with a legal username in the path", async () => {
+        let capturedUrl = null;
+        let fetchCalls = 0;
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = async (url) => {
+            fetchCalls += 1;
+            capturedUrl = url;
+            return { json: async () => ({ id: "user-123", username: "jdoe" }) };
+        };
+
+        try {
+            const client = new KchatClient("mock-token", "my-team");
+            const user = await client.getUserByUsername("jdoe");
+
+            assert.strictEqual(fetchCalls, 1, "fetch should be called once");
+            assert.ok(
+                capturedUrl.includes("/users/username/jdoe"),
+                "URL should contain the username path"
+            );
+            assert.strictEqual(user.id, "user-123");
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+    });
+
+    test("accepts legal username characters unchanged", async () => {
+        let capturedUrl = null;
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = async (url) => {
+            capturedUrl = url;
+            return { json: async () => ({}) };
+        };
+
+        try {
+            const client = new KchatClient("mock-token", "my-team");
+            for (const username of ["jdoe", "first.last", "user_name", "user-123"]) {
+                await client.getUserByUsername(username);
+                assert.ok(
+                    capturedUrl.includes(`/users/username/${username}`),
+                    `URL should contain the username ${username} unchanged`
+                );
+            }
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+    });
+
+    test("rejects path traversal payloads without calling fetch", async () => {
+        let fetchCalls = 0;
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = async () => {
+            fetchCalls += 1;
+            return { json: async () => ({}) };
+        };
+
+        try {
+            const client = new KchatClient("mock-token", "my-team");
+
+            await assert.rejects(client.getUserByUsername("../me"), /Invalid username/);
+            assert.strictEqual(fetchCalls, 0, "fetch must not be called");
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+    });
+
+    test("rejects invalid usernames without calling fetch", async () => {
+        let fetchCalls = 0;
+        const originalFetch = globalThis.fetch;
+        globalThis.fetch = async () => {
+            fetchCalls += 1;
+            return { json: async () => ({}) };
+        };
+
+        try {
+            const client = new KchatClient("mock-token", "my-team");
+
+            for (const invalid of ["", "..", "a/b", "John Doe", "..%2Fme", "JDoe", "josé"]) {
+                await assert.rejects(client.getUserByUsername(invalid), /Invalid username/);
+            }
+            assert.strictEqual(fetchCalls, 0, "fetch must not be called");
+        } finally {
+            globalThis.fetch = originalFetch;
+        }
+    });
+});

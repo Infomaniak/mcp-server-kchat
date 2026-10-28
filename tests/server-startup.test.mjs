@@ -145,4 +145,66 @@ describe("server startup", () => {
             child.kill();
         }
     });
+
+    test("kchat_send_direct_message should declare a username pattern", async () => {
+        const child = startServer();
+
+        try {
+            const response = await listTools(child);
+
+            const dm = response.result.tools.find(
+                (tool) => tool.name === "kchat_send_direct_message",
+            );
+            assert.ok(dm, "kchat_send_direct_message tool should exist");
+
+            assert.strictEqual(
+                dm.inputSchema.properties.username.pattern,
+                "^(?=.*[a-z0-9_-])[a-z0-9._-]+$",
+                "username should reject traversal payloads at the schema boundary",
+            );
+        } finally {
+            child.kill();
+        }
+    });
+
+    test("kchat_send_direct_message should reject traversal payloads at the boundary", async () => {
+        const child = startServer();
+
+        try {
+            child.stdin.write(JSON.stringify({
+                jsonrpc: "2.0",
+                id: 1,
+                method: "initialize",
+                params: {
+                    protocolVersion: "2024-11-05",
+                    capabilities: {},
+                    clientInfo: { name: "test-client", version: "0.0.0" },
+                },
+            }) + "\n");
+            child.stdin.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }) + "\n");
+            child.stdin.write(JSON.stringify({
+                jsonrpc: "2.0",
+                id: 2,
+                method: "tools/call",
+                params: {
+                    name: "kchat_send_direct_message",
+                    arguments: { username: "../me", text: "KC message" },
+                },
+            }) + "\n");
+
+            const response = await readResponse(child, 2);
+
+            assert.strictEqual(
+                response.error.code,
+                -32602,
+                "SDK should reject invalid arguments before the handler runs",
+            );
+            assert.match(
+                response.error.message,
+                /Invalid arguments for tool kchat_send_direct_message/,
+            );
+        } finally {
+            child.kill();
+        }
+    });
 });

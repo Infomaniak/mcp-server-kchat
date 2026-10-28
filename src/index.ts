@@ -4,7 +4,7 @@ import {createRequire} from "node:module";
 import {McpServer} from "@modelcontextprotocol/sdk/server/mcp.js";
 import {z} from "zod";
 import {StdioServerTransport} from "@modelcontextprotocol/sdk/server/stdio.js";
-import {KchatClient} from "./kchat-client.js";
+import {KchatClient, USERNAME_PATTERN} from "./kchat-client.js";
 
 const require = createRequire(import.meta.url);
 const {version} = require("../package.json") as {version: string};
@@ -196,7 +196,7 @@ server.tool(
     "kchat_send_direct_message",
     "Send a direct message to a kChat user by username",
     {
-        username: z.string().describe("The username of the user to send the message to"),
+        username: z.string().regex(USERNAME_PATTERN, "Invalid username").describe("The username of the user to send the message to"),
         text: z.string().describe("The message text to send")
     },
     async ({username, text}) => {
