@@ -195,12 +195,12 @@ describe("server startup", () => {
             const response = await readResponse(child, 2);
 
             assert.strictEqual(
-                response.error.code,
-                -32602,
+                response.result.isError,
+                true,
                 "SDK should reject invalid arguments before the handler runs",
             );
             assert.match(
-                response.error.message,
+                response.result.content[0].text,
                 /Invalid arguments for tool kchat_send_direct_message/,
             );
         } finally {
