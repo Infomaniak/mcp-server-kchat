@@ -16,6 +16,7 @@ function startServer() {
             ...process.env,
             KCHAT_TOKEN: "test-token",
             KCHAT_TEAM_NAME: "test-team",
+            KCHAT_READ_ONLY: "false",
         },
         stdio: ["pipe", "pipe", "pipe"],
     });

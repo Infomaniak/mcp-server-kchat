@@ -11,6 +11,14 @@ const {version} = require("../package.json") as {version: string};
 
 const token = process.env.KCHAT_TOKEN;
 const teamName = process.env.KCHAT_TEAM_NAME;
+const readOnlySetting = process.env.KCHAT_READ_ONLY;
+
+if (readOnlySetting !== undefined && readOnlySetting !== "true" && readOnlySetting !== "false") {
+    console.error("KCHAT_READ_ONLY must be either true or false");
+    process.exit(1);
+}
+
+const readOnly = readOnlySetting === "true";
 
 if (!token || !teamName) {
     console.error(
@@ -34,7 +42,7 @@ const server = new McpServer(
     },
 );
 
-const kChatClient = new KchatClient(token, teamName);
+const kChatClient = new KchatClient(token, teamName, {readOnly});
 
 server.tool(
     "kchat_list_channels",
@@ -67,54 +75,60 @@ server.tool(
     }
 );
 
-server.tool(
-    "kchat_post_message",
-    "Post a new message to a kChat channel",
-    {
-        channel_id: z.string().uuid().describe("The ID of the channel containing the message"),
-        text: z.string().describe("The message text to post")
-    },
-    async ({channel_id, text}) => {
-        const response = await kChatClient.postMessage(channel_id, text, undefined);
+if (!readOnly) {
+    server.tool(
+        "kchat_post_message",
+        "Post a new message to a kChat channel",
+        {
+            channel_id: z.string().uuid().describe("The ID of the channel containing the message"),
+            text: z.string().describe("The message text to post")
+        },
+        async ({channel_id, text}) => {
+            const response = await kChatClient.postMessage(channel_id, text, undefined);
 
-        return {
-            content: [{type: "text", text: JSON.stringify(response)}],
-        };
-    }
-);
+            return {
+                content: [{type: "text", text: JSON.stringify(response)}],
+            };
+        }
+    );
+}
 
-server.tool(
-    "kchat_reply_to_thread",
-    "Reply to a specific message thread in kChat",
-    {
-        thread_id: z.string().uuid().describe("The parent message ID"),
-        text: z.string().describe("The message text to post")
-    },
-    async ({thread_id, text}) => {
-        const post = await kChatClient.getPost(thread_id);
-        const response = await kChatClient.postMessage(post.channel_id, text, thread_id);
+if (!readOnly) {
+    server.tool(
+        "kchat_reply_to_thread",
+        "Reply to a specific message thread in kChat",
+        {
+            thread_id: z.string().uuid().describe("The parent message ID"),
+            text: z.string().describe("The message text to post")
+        },
+        async ({thread_id, text}) => {
+            const post = await kChatClient.getPost(thread_id);
+            const response = await kChatClient.postMessage(post.channel_id, text, thread_id);
 
-        return {
-            content: [{type: "text", text: JSON.stringify(response)}],
-        };
-    }
-);
+            return {
+                content: [{type: "text", text: JSON.stringify(response)}],
+            };
+        }
+    );
+}
 
-server.tool(
-    "kchat_add_reaction",
-    "Add a reaction emoji to a kChat message",
-    {
-        post_id: z.string().uuid().describe("The ID of the the message to react to"),
-        emoji_name: z.string().describe("The name of the emoji reaction")
-    },
-    async ({post_id, emoji_name}) => {
-        const response = await kChatClient.addReaction(post_id, emoji_name);
+if (!readOnly) {
+    server.tool(
+        "kchat_add_reaction",
+        "Add a reaction emoji to a kChat message",
+        {
+            post_id: z.string().uuid().describe("The ID of the the message to react to"),
+            emoji_name: z.string().describe("The name of the emoji reaction")
+        },
+        async ({post_id, emoji_name}) => {
+            const response = await kChatClient.addReaction(post_id, emoji_name);
 
-        return {
-            content: [{type: "text", text: JSON.stringify(response)}],
-        };
-    }
-);
+            return {
+                content: [{type: "text", text: JSON.stringify(response)}],
+            };
+        }
+    );
+}
 
 server.tool(
     "kchat_get_channel_history",
@@ -192,31 +206,33 @@ server.tool(
     }
 );
 
-server.tool(
-    "kchat_send_direct_message",
-    "Send a direct message to a kChat user by username",
-    {
-        username: z.string().regex(USERNAME_PATTERN, "Invalid username").describe("The username of the user to send the message to"),
-        text: z.string().describe("The message text to send")
-    },
-    async ({username, text}) => {
-        try {
-            // Get the user ID from the username
-            const user = await kChatClient.getUserByUsername(username);
+if (!readOnly) {
+    server.tool(
+        "kchat_send_direct_message",
+        "Send a direct message to a kChat user by username",
+        {
+            username: z.string().regex(USERNAME_PATTERN, "Invalid username").describe("The username of the user to send the message to"),
+            text: z.string().describe("The message text to send")
+        },
+        async ({username, text}) => {
+            try {
+                // Get the user ID from the username
+                const user = await kChatClient.getUserByUsername(username);
 
-            // Send the direct message using the user ID
-            const response = await kChatClient.sendDirectMessage(user.id, text);
+                // Send the direct message using the user ID
+                const response = await kChatClient.sendDirectMessage(user.id, text);
 
-            return {
-                content: [{type: "text", text: JSON.stringify(response)}],
-            };
-        } catch (error) {
-            return {
-                content: [{type: "text", text: `Error sending direct message: ${error}`}],
-            };
+                return {
+                    content: [{type: "text", text: JSON.stringify(response)}],
+                };
+            } catch (error) {
+                return {
+                    content: [{type: "text", text: `Error sending direct message: ${error}`}],
+                };
+            }
         }
-    }
-);
+    );
+}
 
 server.tool(
     "kchat_get_user_profile",

@@ -2,6 +2,42 @@
 
 MCP Server for the kChat API.
 
+## Read-only mode
+
+Set `KCHAT_READ_ONLY` to `true` to enable read-only mode. Only these tools will
+be available:
+
+- `kchat_list_channels`
+- `kchat_get_channel_history`
+- `kchat_get_thread_replies`
+- `kchat_get_users`
+- `kchat_get_user_profile`
+
+Message posting, thread replies, reactions, and direct messages are disabled.
+The API client also rejects write operations before making any network request.
+If unset or set to `false`, all tools remain available. Other values prevent the
+server from starting. Restart the server after changing this setting.
+
+For a local build of this version, use the absolute path to `dist/index.js`:
+
+```json
+{
+  "mcpServers": {
+    "kchat": {
+      "command": "node",
+      "args": ["/absolute/path/to/mcp-server-kchat/dist/index.js"],
+      "env": {
+        "KCHAT_TOKEN": "your-token",
+        "KCHAT_TEAM_NAME": "your-team",
+        "KCHAT_READ_ONLY": "true"
+      }
+    }
+  }
+}
+```
+
+This option restricts this MCP server; it does not change the token's API permissions.
+
 ## Tools
 
 1. `kchat_list_channels`
@@ -134,6 +170,7 @@ Add the following to your `claude_desktop_config.json`:
 
 1. `KCHAT_TOKEN`: Required. Your kChat token.
 2. `KCHAT_TEAM_NAME`: Required. Your kChat team unique name.
+3. `KCHAT_READ_ONLY`: Optional. Set to `true` to disable all write operations. Defaults to `false`. With Docker, also pass `-e KCHAT_READ_ONLY` to `docker run`. Requires a build that includes this option.
 
 ### Troubleshooting
 
