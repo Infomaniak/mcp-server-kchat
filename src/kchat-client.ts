@@ -3,16 +3,24 @@ export const USERNAME_PATTERN = /^(?=.*[a-z0-9_-])[a-z0-9._-]+$/;
 export class KchatClient {
     private readonly token: string;
     private readonly teamName: string;
+    private readonly readOnly: boolean;
     private readonly headers: { Authorization: string; "Content-Type": string, "User-Agent": string };
 
-    constructor(token: string, teamName: string) {
+    constructor(token: string, teamName: string, options: {readOnly?: boolean} = {}) {
         this.token = token;
         this.teamName = teamName;
+        this.readOnly = options.readOnly ?? false;
         this.headers = {
             Authorization: `Bearer ${this.token}`,
             "Content-Type": "application/json",
             "User-Agent": "kChat MCP Server"
         };
+    }
+
+    private assertWritesAllowed(): void {
+        if (this.readOnly) {
+            throw new Error("kChat client is read-only: write operations are disabled");
+        }
     }
 
     async getTeamByName(): Promise<any> {
@@ -41,6 +49,7 @@ export class KchatClient {
     }
 
     async postMessage(channel_id: string, text: string, thread_id: string | undefined): Promise<any> {
+        this.assertWritesAllowed();
         const response = await fetch(
             `https://${this.teamName}.kchat.infomaniak.com/api/v4/posts`,
             {
@@ -58,6 +67,7 @@ export class KchatClient {
     }
 
     async addReaction(post_id: string, emoji_name: string): Promise<any> {
+        this.assertWritesAllowed();
         const response = await fetch(
             `https://${this.teamName}.kchat.infomaniak.com/api/v4/reactions`,
             {
@@ -165,6 +175,7 @@ export class KchatClient {
     }
 
     async createDirectChannel(userIds: [string, string]): Promise<any> {
+        this.assertWritesAllowed();
         const response = await fetch(
             `https://${this.teamName}.kchat.infomaniak.com/api/v4/channels/direct`,
             {
@@ -178,6 +189,7 @@ export class KchatClient {
     }
 
     async sendDirectMessage(to_user_id: string, text: string): Promise<any> {
+        this.assertWritesAllowed();
         try {
             const currentUser = await this.getCurrentUser();
             const channel = await this.createDirectChannel([currentUser.id, to_user_id]);
